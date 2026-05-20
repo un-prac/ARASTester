@@ -33,6 +33,7 @@
     "files": [
       "dist/**/*",
       "main.js",
+      "main/**/*",
       "preload.js",
       "package.json"
     ],

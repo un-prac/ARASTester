@@ -32,10 +32,6 @@ This folder holds the project documentation, grouped by purpose.
 - `facts/FACT_ENTRY_POINTS.md`
 - `facts/FACT_PUBLIC_INTERFACES.md`
 
-## Reports
-
-- `reports/monolithic_files_report.json`
-
 ## Assets
 
 - `assets/DASHBOARD.png`

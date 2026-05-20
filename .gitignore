@@ -51,6 +51,7 @@ yarn-error.log*
 .gemini
 
 # Build/Lint output files
+preload.js
 errors.txt
 lint_output*.txt
 lint_errors.txt

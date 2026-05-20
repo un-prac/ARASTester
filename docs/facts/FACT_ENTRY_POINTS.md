@@ -6,43 +6,45 @@
 
 ---
 
-## Electron Entry Point
+## Electron Entry Point (Modular)
 
 ### File: `main.js`
-**Path**: `c:\Projects\ARASTester\main.js`
-**Role**: Electron main process entry (declared in `package.json` as `"main": "main.js"`)
+- **Path**: `c:\Projects\ARASTester\main.js`
+- **Role**: Electron main process bootstrap and lifecycle coordinator.
+- **Dependencies**: Sub-modules under `c:\Projects\ARASTester\main/`
 
-**Explicit Configuration Values**:
-| Configuration | Value | Line |
-|---------------|-------|------|
-| Window Width | 1200 | 11 |
-| Window Height | 800 | 12 |
-| Context Isolation | true | 16 |
-| Node Integration | false | 17 |
-| Dev Mode URL | http://localhost:5173 | 26 |
-| Production Load File | dist/index.html | 31 |
-| Backend Startup Delay | 1500ms | 96 |
-| Backend URL (arg) | http://localhost:5000 | 68 |
-| Backend Exe (Dev) | backend/ArasBackend/bin/Debug/net8.0/win-x64/ArasBackend.exe | 48 |
-| Backend Exe (Prod) | {resourcesPath}/backend/ArasBackend.exe | 46 |
+### Sub-Modules (c:\Projects\ARASTester\main/)
 
-**Electron APIs Used** (explicitly imported, line 2):
-- `app`
-- `BrowserWindow`
-- `ipcMain`
-- `dialog`
-- `Menu`
+#### 1. `main/logger.js`
+- **Role**: Formatter and logger for frontend and backend messages, configuring ANSI colors and severity matching.
 
-**IPC Handlers Registered**:
-| Channel | Line |
-|---------|------|
-| dialog:pickFolder | 108 |
-| fs:readFile | 117 |
-| fs:writeFile | 121 |
-| fs:listJsonFiles | 126 |
-| fs:deleteFile | 134 |
-| settings:read | 142 |
-| settings:write | 153 |
+#### 2. `main/security.js`
+- **Role**: File system access validation (`resolveSafePath`) guarding against directory traversal attacks. Maintains the `authorizedDirs` list.
+
+#### 3. `main/backendRunner.js`
+- **Role**: Spawns and manages the lifetime of the pre-compiled .NET Core Web API backend process.
+- **Backend Port**: Resolves to port `5000` (default) or reads from `process.env.BACKEND_PORT`.
+- **Backend Exe Path (Dev)**: `backend/ArasBackend/bin/Debug/net8.0/win-x64/ArasBackend.exe`
+- **Backend Exe Path (Prod)**: `{resourcesPath}/backend/ArasBackend.exe`
+
+#### 4. `main/ipcHandlers.js`
+- **Role**: Registers all IPC communication channels to bridge the frontend and native system.
+- **IPC Handlers Registered**:
+  - `app:getRuntimeConfig` (returns API base URL)
+  - `dialog:pickFolder` (launches folder browser and auto-authorizes it)
+  - `fs:readFile`, `fs:writeFile`, `fs:listJsonFiles`, `fs:deleteFile` (filesystem operations verified via `resolveSafePath`)
+  - `settings:read`, `settings:write` (manages application configuration file)
+
+### Window Configuration (main.js)
+- **Dimensions**: Width 1200, Height 800
+- **Background Color**: `#1E1F22`
+- **Security Primitives**:
+  - `contextIsolation`: `true`
+  - `nodeIntegration`: `false`
+  - `preload`: `preload.js` (bridged API)
+- **Dev Mode URL**: Load `http://localhost:{VITE_PORT}` (default: `http://localhost:5173`)
+- **Production Mode**: Load build static file `dist/index.html`
+
 
 ---
 

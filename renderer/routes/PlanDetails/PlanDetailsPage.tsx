@@ -213,7 +213,7 @@ export default function PlanDetailsPage({ filename, onNavigate, onBack }: PlanDe
 
                   <div className="space-y-4">
                     {isTest(selectedItem) ? (
-                      <div className="app-surface space-y-5 p-6">
+                      <div className="space-y-5">
                         <TestEditorPanel 
                           test={selectedItem}
                           plan={plan}
@@ -225,7 +225,7 @@ export default function PlanDetailsPage({ filename, onNavigate, onBack }: PlanDe
                         />
                       </div>
                     ) : (
-                      <div className="app-surface space-y-5 p-6">
+                      <div className="space-y-5">
                         <ActionEditorPanel 
                           action={selectedItem}
                           onUpdate={updateSelectedItem as (updates: Partial<Action>) => void}
