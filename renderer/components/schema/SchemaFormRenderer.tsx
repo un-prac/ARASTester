@@ -13,9 +13,11 @@ interface SchemaFormRendererProps {
 
 /**
  * SchemaFormRenderer - Renders an entire action form from its schema definition.
- * 
+ *
  * This component takes an action schema and renders all its fields dynamically,
  * eliminating the need for per-action Editor components.
+ * allParams is forwarded to FieldRenderer so sibling field values (e.g. itemType)
+ * can be used to fetch contextual metadata suggestions.
  */
 const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({ schema, params = {}, onChange, showValidation = false }) => {
   // Calculate validation errors for required fields
@@ -34,8 +36,6 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({ schema, params 
     });
     return errors;
   }, [schema?.fields, params, schema]);
-
-
 
   if (!schema || !schema.fields) {
     return (
@@ -64,9 +64,8 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({ schema, params 
   const handleFieldChange = (fieldName: string, value: unknown) => {
     const newParams = {
       ...params,
-      [fieldName]: value
+      [fieldName]: value,
     };
-
     onChange(newParams);
   };
 
@@ -82,12 +81,13 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({ schema, params 
     <div className="space-y-4">
       {/* Simple fields - can be 2 columns if there are many */}
       {simpleFields.length > 0 && (
-        <div className={simpleFields.length > 2 ? "grid grid-cols-1 md:grid-cols-2 gap-4" : "space-y-4"}>
+        <div className={simpleFields.length > 2 ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : 'space-y-4'}>
           {simpleFields.map((field, index) => (
             <FieldRenderer
               key={field.name || `simple-${index}`}
               field={field}
               value={params[field.name]}
+              allParams={params}
               onChange={(value) => handleFieldChange(field.name, value)}
               error={showValidation ? validationErrors[field.name] : undefined}
             />
@@ -103,6 +103,7 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({ schema, params 
               key={field.name || `complex-${index}`}
               field={field}
               value={params[field.name]}
+              allParams={params}
               onChange={(value) => handleFieldChange(field.name, value)}
               error={showValidation ? validationErrors[field.name] : undefined}
             />

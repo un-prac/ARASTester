@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace ArasBackend.Core.Models
@@ -321,5 +321,31 @@ namespace ArasBackend.Core.Models
     {
         public List<SessionInfo> Sessions { get; set; } = new();
         public required string CurrentSession { get; set; }
+    }
+
+    // Metadata
+    public class MetadataEntry
+    {
+        public required string Name { get; set; }
+        public string? Label { get; set; }
+    }
+
+    public class MetadataResponse
+    {
+        public bool Success { get; set; }
+        public string? Message { get; set; }
+        public List<MetadataEntry> Items { get; set; } = new();
+    }
+
+    public class GetRelationshipTypesRequest
+    {
+        [Required, MinLength(1)]
+        public required string ParentItemType { get; set; }
+    }
+
+    public class GetLifecycleStatesRequest
+    {
+        [Required, MinLength(1)]
+        public required string ItemType { get; set; }
     }
 }

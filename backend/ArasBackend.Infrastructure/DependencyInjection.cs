@@ -20,7 +20,8 @@ public static class DependencyInjection
         services.AddScoped<IWorkflowGateway, WorkflowGateway>();
         services.AddScoped<IAssertionGateway, AssertionGateway>();
         services.AddScoped<IFileGateway, FileGateway>();
-        services.AddScoped<IUtilityGateway, UtilityGateway>();        
+        services.AddScoped<IUtilityGateway, UtilityGateway>();
+        services.AddScoped<IMetadataGateway, MetadataGateway>();        
         return services;
     }
 }

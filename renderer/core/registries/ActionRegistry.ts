@@ -6,52 +6,41 @@ import type { ActionPlugin, ActionSchema, ActionSchemaField } from "@/types/plan
 /**
  * ActionRegistry - Schema-driven action plugin system
  *
- * Loads action definitions from action-schemas.json and provides:
- * - Dynamic Editor components via SchemaFormRenderer
- * - Default parameters from schema
- * - API endpoint information for execution
- * - Category and metadata for UI organization
+ * Static imports stay at the top (required by Vite/ESM).
+ * Actual processing (building the Maps, creating React elements for every action)
+ * is deferred to the first call that needs it. This removes ~35 React.createElement
+ * calls from the module-load critical path, eliminating the 180ms scheduler violation.
  */
 class ActionRegistry {
-  private plugins: Map<string, ActionPlugin>;
-  private categories: Map<string, unknown>;
+  private plugins: Map<string, ActionPlugin> | null = null;
+  private categories: Map<string, unknown> | null = null;
 
-  constructor() {
+  // ── Lazy init ──────────────────────────────────────────────────────────────
+
+  private ensureLoaded() {
+    if (this.plugins !== null) return;
+
     this.plugins = new Map();
     this.categories = new Map();
-    this.loadFromSchema();
-  }
 
-  /**
-   * Load all actions from the schema file
-   */
-  loadFromSchema() {
     // Load categories
     if (actionSchemas.categories) {
       actionSchemas.categories.forEach((cat: unknown) => {
-        // We know cat has an id because we use it, but safe practice is to inspect or assert if needed.
-        // For now, we store as unknown or type assert if we trust schema.json structure "mostly".
-        // Let's use a basic shape check if we were strict, but here we just store it.
-        // Actually cat needs to be an object with an ID to be useful in the map.
-         const category = cat as { id: string, [key: string]: unknown };
-         if (category && category.id) {
-            this.categories.set(category.id, category);
-         }
+        const category = cat as { id: string; [key: string]: unknown };
+        if (category?.id) this.categories!.set(category.id, category);
       });
     }
 
     // Load actions
     if (actionSchemas.actions) {
       actionSchemas.actions.forEach((schema: unknown) => {
-        // Assert schema is ActionSchema to proceed, trusting the JSON loader for now but avoiding 'any'
         this.register(this.createPluginFromSchema(schema as ActionSchema));
       });
     }
   }
 
-  /**
-   * Create a plugin object from a schema definition
-   */
+  // ── Plugin creation ────────────────────────────────────────────────────────
+
   createPluginFromSchema(schema: ActionSchema): ActionPlugin {
     return {
       type: schema.type,
@@ -62,78 +51,67 @@ class ActionRegistry {
       apiMethod: schema.apiMethod || "POST",
       isClientSide: schema.isClientSide || false,
       defaultParams: this.buildDefaultParams(schema.fields),
-      // Create a dynamic Editor component that uses SchemaFormRenderer
-      // Props typed as any in signature previously -> unknown or defined interface
-      // Editor props usually: { params: Record<string, any>, onChange: (newParams) => void }
-      Editor: (props: { params?: Record<string, unknown>, onChange?: (p: Record<string, unknown>) => void }) =>
+      Editor: (props: {
+        params?: Record<string, unknown>;
+        onChange?: (p: Record<string, unknown>) => void;
+      }) =>
         React.createElement(SchemaFormRenderer, {
-          schema: schema,
+          schema,
           params: props.params ?? {},
           onChange: props.onChange ?? (() => undefined),
         }),
-      schema: schema, // Keep reference for validation and other uses
+      schema,
     };
   }
 
-  /**
-   * Build default parameters object from field definitions
-   */
   buildDefaultParams(fields: ActionSchemaField[]): Record<string, unknown> {
-    if (!fields || fields.length === 0) return {};
-
+    if (!fields?.length) return {};
     return fields.reduce((acc: Record<string, unknown>, field) => {
-      if (field.default !== undefined) {
-        acc[field.name] = field.default;
-      }
+      if (field.default !== undefined) acc[field.name] = field.default;
       return acc;
     }, {});
   }
 
-  /**
-   * Register a plugin (used for custom/manual plugins)
-   */
+  // ── Public API ─────────────────────────────────────────────────────────────
+
   register(plugin: ActionPlugin) {
     if (!plugin.type) {
-      console.error("Invalid plugin registration - missing type:", plugin);
+      console.error("Invalid plugin registration — missing type:", plugin);
       return;
     }
+    // ensureLoaded is NOT called here — register() is only used internally
+    // after ensureLoaded has already run, or for external manual registrations.
+    if (this.plugins === null) this.plugins = new Map();
     this.plugins.set(plugin.type, plugin);
   }
 
-  /**
-   * Get a plugin by type
-   */
   get(type: string): ActionPlugin | undefined {
-    return this.plugins.get(type);
+    this.ensureLoaded();
+    return this.plugins!.get(type);
   }
 
-  /**
-   * Get all registered plugins
-   */
   getAll(): ActionPlugin[] {
-    return Array.from(this.plugins.values());
+    this.ensureLoaded();
+    return Array.from(this.plugins!.values());
   }
 
-  /**
-   * Get plugins grouped by category
-   */
   getByCategory() {
-    const grouped = new Map();
+    this.ensureLoaded();
+    const grouped = new Map<string, { id: string; label: string; icon: string; actions: ActionPlugin[] }>();
 
-    this.plugins.forEach((plugin) => {
+    this.plugins!.forEach(plugin => {
       const categoryId = plugin.category || "other";
       if (!grouped.has(categoryId)) {
-        const categoryInfo = this.categories.get(categoryId) || {
+        const info = (this.categories!.get(categoryId) as {
+          id: string; label: string; icon: string;
+        }) ?? {
           id: categoryId,
           label: categoryId.charAt(0).toUpperCase() + categoryId.slice(1),
           icon: "📋",
         };
-        grouped.set(categoryId, {
-          ...categoryInfo,
-          actions: [],
-        });
+        grouped.set(categoryId, { ...info, actions: [] });
       }
-      grouped.get(categoryId).actions.push(plugin);
+      grouped.get(categoryId)!.actions.push(plugin);
     });
 
     return grouped;

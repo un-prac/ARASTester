@@ -73,3 +73,12 @@ public interface IUtilityGateway
     Task<ItemResponse> SetVariable(SetVariableRequest request, CancellationToken cancellationToken = default);
     Task<ItemResponse> LogMessage(LogMessageRequest request, CancellationToken cancellationToken = default);
 }
+
+public interface IMetadataGateway
+{
+    Task<MetadataResponse> GetItemTypes(CancellationToken cancellationToken = default);
+    Task<MetadataResponse> GetRelationshipTypes(GetRelationshipTypesRequest request, CancellationToken cancellationToken = default);
+    Task<MetadataResponse> GetLifecycleStates(GetLifecycleStatesRequest request, CancellationToken cancellationToken = default);
+    Task<MetadataResponse> GetMethods(CancellationToken cancellationToken = default);
+    Task<MetadataResponse> GetSequences(CancellationToken cancellationToken = default);
+}

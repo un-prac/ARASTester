@@ -9,6 +9,7 @@ public static class DependencyInjection
     {
         services.AddScoped<ConnectionAppService>();
         services.AddScoped<ItemAppService>();
+        services.AddScoped<MetadataAppService>();
         return services;
     }
 }

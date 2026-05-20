@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { apiClient } from "@/core/api/client";
 import type { ApiOptions } from "@/core/api/client";
+import { queryClient } from "@/core/query/queryClient";
 
 export interface ServerInfo {
   database: string;
@@ -127,7 +128,7 @@ export const useSessionStore = create<SessionState>()(
           newSet.add(targetName);
           return { isLoading: true, connectingSessions: newSet, error: null };
         });
-        
+
         try {
           const response = await apiClient.post<ConnectionResponse>(
             "/api/aras/connect",
@@ -137,6 +138,8 @@ export const useSessionStore = create<SessionState>()(
 
           if (response.success) {
             await get().fetchSessions(apiOptions);
+            // Invalidate metadata cache — new session may have different ARAS permissions
+            queryClient.invalidateQueries({ queryKey: ['aras-metadata'] });
 
             // Update lastAccessedAt for the corresponding saved session
             if (response.sessionName) {
@@ -175,7 +178,10 @@ export const useSessionStore = create<SessionState>()(
 
           await apiClient.post<ConnectionResponse>(endpoint, {});
           await get().fetchSessions();
+          // Invalidate all metadata caches on logout
+          queryClient.invalidateQueries({ queryKey: ['aras-metadata'] });
           set({ isLoading: false });
+
         } catch (err: unknown) {
           const message = err instanceof Error ? err.message : "Logout failed";
           set({ error: message, isLoading: false });

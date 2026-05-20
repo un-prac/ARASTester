@@ -1,94 +1,140 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
+import { SuggestInput } from '@/components/ui/SuggestInput';
 import KeyValueEditor from './KeyValueEditor';
 import type { ActionSchemaField } from '@/types/plan';
+import {
+  useItemTypesQuery,
+  useRelationshipTypesQuery,
+  useLifecycleStatesQuery,
+  useMethodsQuery,
+  useSequencesQuery,
+  type MetadataEntry,
+} from '@/core/hooks/useMetadataQueries';
 
 interface FieldRendererProps {
   field: ActionSchemaField;
   value: unknown;
   onChange: (value: unknown) => void;
   error?: string;
+  /** Full sibling params — used for context-aware suggestions (e.g. itemType → states). */
+  allParams?: Record<string, unknown>;
 }
 
-// Helper hook for debounced value
+// ── Debounced change hook ────────────────────────────────────────────────────
+
 function useDebouncedChange<T>(value: T, onChange: (val: T) => void, delay = 300) {
   const [localValue, setLocalValue] = useState<T>(value);
   const skipUpdate = useRef(false);
 
-  // Sync local value when prop value changes (e.g. undo/redo or selection change)
   useEffect(() => {
-    if (!skipUpdate.current) {
-      setLocalValue(value);
-    }
+    if (!skipUpdate.current) setLocalValue(value);
     skipUpdate.current = false;
   }, [value]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      // Only call onChange if the value is different (avoid initial fire)
       if (localValue !== value) {
-        skipUpdate.current = true; // Flag to ignore the incoming prop update triggered by this change
+        skipUpdate.current = true;
         onChange(localValue);
       }
     }, delay);
-
     return () => clearTimeout(timer);
-  }, [localValue, delay]); // Don't include onChange/value in deps to avoid loops, logic handled inside
+  }, [localValue, delay]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return [localValue, setLocalValue] as const;
 }
 
-/**
- * Renders a single form field based on its schema definition.
- * Supports: text, number, password, textarea, select, checkbox, keyvalue, json
- */
-const FieldRenderer: React.FC<FieldRendererProps> = ({ field, value, onChange, error }) => {
-  // We use local state for inputs that trigger frequent updates (text, number, textarea, json)
-  // Checkbox and Select are usually instant/cheap enough, but text needs debouncing.
-  
+// ── Sibling value helper ─────────────────────────────────────────────────────
+
+function getSiblingStr(allParams: Record<string, unknown>, key: string): string {
+  const v = allParams[key];
+  return typeof v === 'string' ? v.trim() : '';
+}
+
+// ── Per-field suggestion hook ────────────────────────────────────────────────
+
+type SuggestionResult = { data: MetadataEntry[]; isLoading: boolean; hasCategory: boolean };
+
+function useSuggestionsForField(
+  fieldName: string,
+  allParams: Record<string, unknown>,
+): SuggestionResult {
+  const itemType = getSiblingStr(allParams, 'itemType') || getSiblingStr(allParams, 'parentType');
+  const parentType = getSiblingStr(allParams, 'parentType') || getSiblingStr(allParams, 'itemType');
+  const propName = getSiblingStr(allParams, 'property');
+
+  // All hooks called unconditionally (Rules of Hooks).
+  // TanStack Query's `enabled` flag prevents actual network calls when not needed.
+  const itemTypesQ = useItemTypesQuery();
+  const relTypesQ = useRelationshipTypesQuery(parentType);
+  const statesQ = useLifecycleStatesQuery(itemType);
+  const methodsQ = useMethodsQuery();
+  const seqQ = useSequencesQuery();
+
+  switch (fieldName) {
+    case 'itemType':
+    case 'parentType':
+      return { data: itemTypesQ.data ?? [], isLoading: itemTypesQ.isFetching, hasCategory: true };
+
+    case 'relationshipType':
+      return { data: relTypesQ.data ?? [], isLoading: relTypesQ.isFetching, hasCategory: true };
+
+    case 'targetState':
+    case 'expectedState':
+    case 'state':
+      return { data: statesQ.data ?? [], isLoading: statesQ.isFetching, hasCategory: true };
+
+    case 'expected':
+      if (propName === 'state') {
+        return { data: statesQ.data ?? [], isLoading: statesQ.isFetching, hasCategory: true };
+      }
+      return { data: [], isLoading: false, hasCategory: false };
+
+    case 'methodName':
+      return { data: methodsQ.data ?? [], isLoading: methodsQ.isFetching, hasCategory: true };
+
+    case 'sequenceName':
+      return { data: seqQ.data ?? [], isLoading: seqQ.isFetching, hasCategory: true };
+
+    default:
+      return { data: [], isLoading: false, hasCategory: false };
+  }
+}
+
+// ── Component ────────────────────────────────────────────────────────────────
+
+const FieldRenderer: React.FC<FieldRendererProps> = ({
+  field,
+  value,
+  onChange,
+  error,
+  allParams = {},
+}) => {
   const [textValue, setTextValue] = useDebouncedChange<string>(
-    (value as string) ?? (field.default as string) ?? '', 
-    onChange as (v: string) => void
+    (value as string) ?? (field.default as string) ?? '',
+    onChange as (v: string) => void,
   );
-  
+
   const [numberValue, setNumberValue] = useDebouncedChange<string>(
-    (value as string) ?? (field.default as string) ?? '', 
-    onChange as (v: string) => void
+    (value as string) ?? (field.default as string) ?? '',
+    onChange as (v: string) => void,
   );
-  
+
   const [jsonValue, setJsonValue] = useDebouncedChange<string>(
-     typeof value === 'object' ? JSON.stringify(value, null, 2) : ((value as string) ?? ''),
-     (val: string) => {
-        try {
-            const parsed = JSON.parse(val);
-            onChange(parsed);
-        } catch {
-            onChange(val);
-        }
-     }
+    typeof value === 'object' ? JSON.stringify(value, null, 2) : ((value as string) ?? ''),
+    (val: string) => {
+      try { onChange(JSON.parse(val)); } catch { onChange(val); }
+    },
   );
 
-  const baseInputClass = "bg-muted/30";
-  const errorInputClass = error ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "";
+  const { data: suggestions, isLoading, hasCategory } = useSuggestionsForField(field.name, allParams);
 
-  // Render help text or error
-  const renderHelpText = () => {
-    if (error) {
-      return (
-        <p className="text-xs text-red-500 mt-1">
-          {error}
-        </p>
-      );
-    }
-    if (!field.helpText) return null;
-    return (
-      <p className="text-xs text-muted-foreground mt-1">
-        {field.helpText}
-      </p>
-    );
-  };
+  const baseInputClass = 'bg-muted/30';
+  const errorInputClass = error ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : '';
 
-  // Render required indicator
+  // ── Shared sub-renders ───────────────────────────────────────────────────
+
   const renderLabel = () => (
     <label className="text-sm font-medium leading-none block mb-1">
       {field.label}
@@ -96,9 +142,34 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({ field, value, onChange, e
     </label>
   );
 
+  const renderHelpText = () => {
+    if (error) return <p className="text-xs text-red-500 mt-1">{error}</p>;
+    if (!field.helpText) return null;
+    return <p className="text-xs text-muted-foreground mt-1">{field.helpText}</p>;
+  };
+
+  // ── Field type switch ────────────────────────────────────────────────────
+
   switch (field.type) {
     case 'text':
     case 'password':
+      // Use SuggestInput for fields with metadata suggestions, plain Input otherwise
+      if (hasCategory && field.type === 'text') {
+        return (
+          <div className="space-y-1">
+            {renderLabel()}
+            <SuggestInput
+              value={textValue}
+              onChange={setTextValue}
+              suggestions={suggestions}
+              isLoading={isLoading}
+              placeholder={field.placeholder}
+              className={`${baseInputClass} ${errorInputClass}`}
+            />
+            {renderHelpText()}
+          </div>
+        );
+      }
       return (
         <div className="space-y-1">
           {renderLabel()}
@@ -132,14 +203,18 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({ field, value, onChange, e
       return (
         <div className="space-y-1">
           {renderLabel()}
-          {field.prefix && <div className="text-xs font-mono text-muted-foreground font-bold">{field.prefix}</div>}
+          {field.prefix && (
+            <div className="text-xs font-mono text-muted-foreground font-bold">{field.prefix}</div>
+          )}
           <textarea
             value={textValue}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setTextValue(e.target.value)}
             placeholder={field.placeholder}
             className={`w-full min-h-[120px] rounded-md border border-input px-3 py-2 text-sm font-mono focus:border-primary focus:ring-1 focus:ring-primary ${baseInputClass}`}
           />
-          {field.suffix && <div className="text-xs font-mono text-muted-foreground font-bold">{field.suffix}</div>}
+          {field.suffix && (
+            <div className="text-xs font-mono text-muted-foreground font-bold">{field.suffix}</div>
+          )}
           {renderHelpText()}
         </div>
       );
@@ -153,7 +228,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({ field, value, onChange, e
             onChange={(e: React.ChangeEvent<HTMLSelectElement>) => onChange(e.target.value)}
             className={`w-full appearance-none rounded-md border border-input px-4 py-2.5 text-sm focus:border-primary focus:ring-primary ${baseInputClass}`}
           >
-            {field.options?.map((opt) => (
+            {field.options?.map(opt => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}
               </option>
@@ -174,9 +249,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({ field, value, onChange, e
           />
           <label className="text-sm font-medium">{field.label}</label>
           {field.helpText && (
-            <span className="text-xs text-muted-foreground ml-2">
-              ({field.helpText})
-            </span>
+            <span className="text-xs text-muted-foreground ml-2">({field.helpText})</span>
           )}
         </div>
       );
@@ -205,7 +278,6 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({ field, value, onChange, e
       );
 
     default:
-      // Default to text input logic
       return (
         <div className="space-y-1">
           {renderLabel()}
