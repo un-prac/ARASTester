@@ -19,12 +19,12 @@ ItemController.Query() [Line 18-19]
     │ calls: _itemService.QueryItems(request)
     ▼
 ItemAppService.QueryItems()
-    │ calls: _gateway.QueryItems(request)
+    │ calls: _itemGateway.QueryItems(request)
     ▼
-ArasGateway.QueryItems() [Lines 44-70]
-    │ calls: _sessionManager.Execute(callback)
+ItemGateway.QueryItems()
+    │ calls: BaseGateway.ExecuteIom(sessionName, callback)
     │     ├── resolves: ISessionContext.SessionId
-    │     └── retrieves: IOM.Innovator object
+    │     └── retrieves: IOM.Innovator object from ArasSessionManager
     │
     ▼
 ARAS IOM SDK → Innovator Server
@@ -33,7 +33,7 @@ ARAS IOM SDK → Innovator Server
 ItemResponse { Success, Message, Data, ItemCount }
 ```
 
-**Source**: FACT_PUBLIC_INTERFACES.md, ArasGateway.cs Lines 44-70
+**Source**: FACT_PUBLIC_INTERFACES.md, ItemGateway.cs
 
 ### 1.2 ARAS Connection Flow
 
@@ -68,9 +68,9 @@ Renderer Process (React)
     preload.js (contextBridge.exposeInMainWorld)
     │ calls: ipcRenderer.invoke("fs:readFile", baseDir, relativePath)
     ▼
-main.js (ipcMain.handle)
+main/ipcHandlers.js (ipcMain.handle)
     │ handler: "fs:readFile"
-    │ calls: resolveSafePath(baseDir, relativePath)
+    │ calls: resolveSafePath(baseDir, relativePath) (defined in main/security.js)
     │     ├── validates: baseDir in Set[authorizedDirs]
     │     ├── resolves: canonicalBase = realpathSync(baseDir)
     │     ├── normalizes: relativePath matches [..] or isAbsolute
@@ -83,7 +83,7 @@ File System
 Returns: file content string
 ```
 
-**Source**: main.js
+**Source**: main.js, main/ipcHandlers.js, main/security.js
 
 ---
 

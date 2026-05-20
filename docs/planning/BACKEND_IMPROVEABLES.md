@@ -1,7 +1,7 @@
 # BACKEND IMPROVEABLES
 
-Last reviewed: 2026-03-07  
-Scope: `backend/**` ASP.NET Core API, session lifecycle, gateway execution model, and failure handling.
+Last reviewed: 2026-05-20  
+Scope: `backend/**` ASP.NET Core API, session lifecycle, modular gateway execution models, and failure handling.
 
 ## Priority 0 (Fix Immediately)
 

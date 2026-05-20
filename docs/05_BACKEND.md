@@ -70,12 +70,18 @@
 
 ---
 
-## 4. ArasGateway Methods (from FACT_PUBLIC_INTERFACES.md)
+## 4. Domain Gateway Methods (from FACT_PUBLIC_INTERFACES.md)
 
-**File**: `backend/ArasBackend.Infrastructure/Gateways/ArasGateway.cs`
-**Implements**: `IArasGateway`
+**Folder**: `backend/ArasBackend.Infrastructure/Gateways/`
+**Implements**: Domain-specific gateway interfaces (`IItemGateway`, `IWorkflowGateway`, `IAssertionGateway`, `IFileGateway`, `IUtilityGateway`)
 
-Detailed IOM mappings are documented in the code. The gateway acts as a host-agnostic wrapper around the ARAS IOM SDK, executing all operations through the `ArasSessionManager`.
+The gateway implementation is divided into clean, single-responsibility files that wrap the ARAS IOM SDK:
+- **`AssertionGateway.cs`**: Performs validation/assertions against PLM database state.
+- **`FileGateway.cs`**: Integrates upload/download actions with ARAS file vaulting.
+- **`ItemGateway.cs`**: Executes lifecycle promotions, locking, relationships, and CRUD items.
+- **`UtilityGateway.cs`**: Executes SQL, raw AML/methods, and wait/logging utilities.
+- **`WorkflowGateway.cs`**: Manages workflows and completes inbox activities.
+- **`BaseGateway.cs`**: A shared base class providing standard exception mapping and session handling.
 
 ---
 

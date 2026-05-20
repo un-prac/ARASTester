@@ -14,11 +14,6 @@ This folder holds the project documentation, grouped by purpose.
 - `08_ENFORCEMENT_DEBT.md`
 - `API_REFERENCE.md`
 
-## Context
-
-- `context/APPLICATION_CONTEXT.md`
-- `context/ARASTester-Overview.md`
-
 ## Planning
 
 - `planning/BACKEND_IMPROVEABLES.md`

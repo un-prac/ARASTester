@@ -182,4 +182,4 @@
 | RelationshipType | ARAS relationship type name (e.g., Part BOM) | ArasModels.cs |
 | TargetState | Lifecycle state to promote to | ArasModels.cs |
 | Aml | ARAS Markup Language query string | ArasModels.cs |
-| Innovator | ARAS IOM Innovator object (from `Aras.IOM`) | ArasGateway.cs |
+| Innovator | ARAS IOM Innovator object (from `Aras.IOM`) | BaseGateway.cs |

@@ -12,7 +12,7 @@ Think of it like this:
 - Each step is an **action** (for example: connect to ARAS, query an item, verify a field value).
 - You run the plan and see pass/fail results.
 
-Today, the app already supports many ARAS operations. The ideas below are about making testing easier, safer, and more scalable for real teams.
+Today, the app already supports many ARAS operations. The codebase has recently been modularized (partitioning the Electron main process and separating domain gateway responsibilities on the C# backend) to serve as a clean and robust foundation. The ideas below are about leveraging this modern architecture to make testing easier, safer, and more scalable for real teams.
 
 ---
 

@@ -41,7 +41,7 @@
 
 ### 1.4 File System Security (Path Traversal Protection)
 
-**File**: `main.js` (resolveSafePath)
+**File**: `main/security.js` (resolveSafePath)
 
 | Mechanism            | Description                                                               |
 | -------------------- | ------------------------------------------------------------------------- |
@@ -85,10 +85,10 @@ No role-based access control (RBAC) or policy-based authorization were found.
 
 **Observed Validation**:
 
-| Location       | Validation                               | File           |
-| -------------- | ---------------------------------------- | -------------- |
-| ApplyAML       | Wraps AML in `<AML>` tags if not present | ArasGateway.cs |
-| Request Models | `required` keyword on properties         | ArasModels.cs  |
+| Location       | Validation                               | File              |
+| -------------- | ---------------------------------------- | ----------------- |
+| ApplyAML       | Wraps AML in `<AML>` tags if not present | UtilityGateway.cs |
+| Request Models | `required` keyword on properties         | ArasModels.cs     |
 
 ---
 
@@ -127,7 +127,7 @@ The middleware catches all unhandled exceptions and returns structured JSON resp
 
 ### 5.2 Gateway-Level Error Handling
 
-**File**: `ArasGateway.cs`
+**File**: `BaseGateway.cs`
 
 ```csharp
 if (result.isError())

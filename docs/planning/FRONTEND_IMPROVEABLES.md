@@ -1,7 +1,7 @@
 # FRONTEND IMPROVEABLES
 
-Last reviewed: 2026-03-07  
-Scope: `renderer/**` frontend architecture, state, execution flow, and UI performance.
+Last reviewed: 2026-05-20  
+Scope: `renderer/**` and `main/**` frontend architecture, state, execution flow, and UI performance.
 
 ## Priority 0 (Fix First)
 
@@ -76,7 +76,7 @@ Scope: `renderer/**` frontend architecture, state, execution flow, and UI perfor
 
 10. Port configuration drift between Electron and frontend
 - Evidence:
-  - backend spawn uses `BACKEND_PORT` in `main.js:190`.
+  - backend spawn uses `BACKEND_PORT` in `main/backendRunner.js`.
   - frontend defaults to `http://localhost:5000` in `renderer/core/api/client.ts:1`.
 - Risk: backend and frontend can silently target different ports.
 - Improvement:
@@ -103,11 +103,9 @@ Scope: `renderer/**` frontend architecture, state, execution flow, and UI perfor
   - replace `any` with `unknown` + narrowed types.
   - type action params by schema-discriminated unions over time.
 
-13. Local ad-hoc Button in page-level file
-- Evidence: custom button implementation in `renderer/routes/PlanDetails/PlanDetailsPage.tsx:242+`.
-- Risk: visual/behavior drift from shared UI primitives and more maintenance.
-- Improvement:
-  - replace with shared `components/ui/button`.
+13. Local ad-hoc Button in page-level file [RESOLVED]
+- Status: ✅ Replaced ad-hoc button element in `renderer/routes/PlanDetails/PlanDetailsPage.tsx` with the shared `components/ui/button` primitive.
+- Risk: None (Resolved).
 
 14. Inconsistent TS/JS migration in app shell paths
 - Evidence: `renderer/app/App.tsx:36` imports `SettingsPage.jsx` while app is TS-first.

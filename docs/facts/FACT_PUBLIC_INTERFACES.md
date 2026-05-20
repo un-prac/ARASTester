@@ -57,30 +57,73 @@
 
 ---
 
-## ArasGateway (`backend/ArasBackend.Infrastructure/Gateways/ArasGateway.cs`)
-**Implements**: `IArasGateway` (inferred from `: IArasGateway` line 10)
+## Backend Gateways (`backend/ArasBackend.Infrastructure/Gateways/`)
 
-| Method | Parameter Type | Return Type | Lines |
-|--------|----------------|-------------|-------|
-| QueryItems | QueryRequest | ItemResponse | 44-70 |
-| GetItemById | GetByIdRequest | ItemResponse | 72-84 |
-| GetItemByKeyedName | GetByKeyedNameRequest | ItemResponse | 86-89 |
-| CreateItem | CreateItemRequest | ItemResponse | 91-100 |
-| UpdateItem | UpdateItemRequest | ItemResponse | 102-112 |
-| DeleteItem | DeleteItemRequest | ItemResponse | 114-122 |
-| PurgeItem | DeleteItemRequest | ItemResponse | 124-132 |
-| LockItem | LockRequest | ItemResponse | 134-142 |
-| UnlockItem | LockRequest | ItemResponse | 144-152 |
-| CheckLockStatus | LockRequest | ItemResponse | 154-175 |
-| AddRelationship | AddRelationshipRequest | ItemResponse | 177-192 |
-| GetRelationships | GetRelationshipsRequest | ItemResponse | 194-205 |
-| DeleteRelationship | DeleteRelationshipRequest | ItemResponse | 207-215 |
-| PromoteItem | PromoteRequest | ItemResponse | 217-228 |
-| GetCurrentState | GetByIdRequest | ItemResponse | 230-251 |
-| ApplyAML | ApplyAmlRequest | ItemResponse | 253-261 |
-| ApplySQL | ApplySqlRequest | ItemResponse | 263-266 |
-| ApplyMethod | ApplyMethodRequest | ItemResponse | 268-271 |
-| AssertItemExists | AssertExistsRequest | AssertionResponse | 273-291 |
-| AssertItemNotExists | AssertExistsRequest | AssertionResponse | 293-311 |
-| AssertPropertyValue | AssertPropertyRequest | AssertionResponse | 313-329 |
-| AssertState | AssertStateRequest | AssertionResponse | 331-347 |
+The single `IArasGateway` has been split into 5 domain-focused interfaces defined in `IArasInterfaces.cs` and implemented by corresponding gateway classes.
+
+### ItemGateway (`ItemGateway.cs`)
+**Implements**: `IItemGateway`
+
+| Method | Parameter Type | Return Type |
+|--------|----------------|-------------|
+| QueryItems | QueryRequest | ItemResponse |
+| GetItemById | GetByIdRequest | ItemResponse |
+| GetItemByKeyedName | GetByKeyedNameRequest | ItemResponse |
+| CreateItem | CreateItemRequest | ItemResponse |
+| UpdateItem | UpdateItemRequest | ItemResponse |
+| DeleteItem | DeleteItemRequest | ItemResponse |
+| PurgeItem | DeleteItemRequest | ItemResponse |
+| LockItem | LockRequest | ItemResponse |
+| UnlockItem | LockRequest | ItemResponse |
+| CheckLockStatus | LockRequest | ItemResponse |
+| AddRelationship | AddRelationshipRequest | ItemResponse |
+| GetRelationships | GetRelationshipsRequest | ItemResponse |
+| DeleteRelationship | DeleteRelationshipRequest | ItemResponse |
+| PromoteItem | PromoteRequest | ItemResponse |
+| GetCurrentState | GetByIdRequest | ItemResponse |
+
+### WorkflowGateway (`WorkflowGateway.cs`)
+**Implements**: `IWorkflowGateway`
+
+| Method | Parameter Type | Return Type |
+|--------|----------------|-------------|
+| StartWorkflow | StartWorkflowRequest | ItemResponse |
+| GetAssignedActivities | (none) | ItemResponse |
+| CompleteActivity | CompleteActivityRequest | ItemResponse |
+
+### AssertionGateway (`AssertionGateway.cs`)
+**Implements**: `IAssertionGateway`
+
+| Method | Parameter Type | Return Type |
+|--------|----------------|-------------|
+| AssertItemExists | AssertExistsRequest | AssertionResponse |
+| AssertItemNotExists | AssertExistsRequest | AssertionResponse |
+| AssertPropertyValue | AssertPropertyRequest | AssertionResponse |
+| AssertPropertyContains | AssertPropertyContainsRequest | AssertionResponse |
+| AssertState | AssertStateRequest | AssertionResponse |
+| AssertCount | AssertCountRequest | AssertionResponse |
+| AssertLocked | LockRequest | AssertionResponse |
+| AssertUnlocked | LockRequest | AssertionResponse |
+| VerifyFileExists | VerifyFileExistsRequest | AssertionResponse |
+
+### FileGateway (`FileGateway.cs`)
+**Implements**: `IFileGateway`
+
+| Method | Parameter Type | Return Type |
+|--------|----------------|-------------|
+| UploadFile | UploadFileRequest | ItemResponse |
+| DownloadFile | DownloadFileRequest | ItemResponse |
+
+### UtilityGateway (`UtilityGateway.cs`)
+**Implements**: `IUtilityGateway`
+
+| Method | Parameter Type | Return Type |
+|--------|----------------|-------------|
+| ApplyAML | ApplyAmlRequest | ItemResponse |
+| ApplySQL | ApplySqlRequest | ItemResponse |
+| ApplyMethod | ApplyMethodRequest | ItemResponse |
+| GenerateID | (none) | ItemResponse |
+| GetNextSequence | GetNextSequenceRequest | ItemResponse |
+| Wait | WaitRequest | ItemResponse |
+| SetVariable | SetVariableRequest | ItemResponse |
+| LogMessage | LogMessageRequest | ItemResponse |

@@ -66,7 +66,7 @@
 
 | Item                  | Discrepancy                                                                                                                                                          |
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **StartWorkflow Map** | Frontend `ActionSchema` marks `workflowMap` as **required**, but `ArasGateway.cs` currently returns an error if a map is provided (only default workflow supported). |
+| **StartWorkflow Map** | Frontend `ActionSchema` marks `workflowMap` as **required**, but `WorkflowGateway.cs` currently returns an error if a map is provided (only default workflow supported). |
 | **Wait/Log/Variable** | Backend provides endpoints for these utility actions, but `ActionExecutor.ts` implements them **client-side** by default for responsiveness.                         |
 
 ---
@@ -94,7 +94,7 @@
 
 **Answer**:
 
-- **Status**: ✅ Implemented in `ArasGateway.cs`.
+- **Status**: ✅ Implemented in `WorkflowGateway.cs`.
 - **Note**: Currently supports default workflow for an item; explicit map selection is pending full implementation. (Ref: `action-schemas.json` Lines 562-631)
 
 ---
@@ -105,7 +105,7 @@
 
 **Answer**:
 
-- **Status**: ✅ Implemented in `ArasGateway.cs`.
+- **Status**: ✅ Implemented in `FileGateway.cs`.
 - **Note**: Uses `setFileProperty` for upload and `checkout` for download. (Schema exists in `action-schemas.json`)
 
 ---
@@ -133,10 +133,10 @@ policy.WithOrigins("http://localhost:3000", "http://localhost:5173")
 
 **Question**: Should ARAS error strings be sanitized before returning to frontend?
 
-**Answer** (from `ArasGateway.cs` and `ArasSessionManager.cs`):
+**Answer**:
 
 ```csharp
-Message = result.getErrorString()  // ArasGateway
+Message = result.getErrorString()  // BaseGateway
 throw new ArasAuthException(loginResult.getErrorString());  // SessionManager
 ```
 

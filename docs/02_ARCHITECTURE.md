@@ -20,7 +20,7 @@ flowchart LR
         direction TB
 
         subgraph MainProcess ["Main Process (Node.js)"]
-            Main["main.js"]:::electron
+            Main["main.js & main/"]:::electron
             Preload["preload.js"]:::electron
             FS[("Local FS<br/>(JSON Plans)")]:::storage
         end
@@ -40,7 +40,7 @@ flowchart LR
         Controllers["Controllers<br/>(Presentation)"]:::dotnet
         SessionCtx["WebSessionContext<br/>(Presentation)"]:::dotnet
         Services["App Services<br/>(Application)"]:::dotnet
-        Gateway["Aras Gateway<br/>(Infrastructure)"]:::dotnet
+        Gateway["Domain Gateways<br/>(Infrastructure)"]:::dotnet
         SessionMgr["Aras Session Mgr<br/>(Infrastructure)"]:::dotnet
     end
 
@@ -99,13 +99,14 @@ index.html (entry)
 
 ```
 main.js (entry per package.json "main")
-    └── requires: electron (app, BrowserWindow, ipcMain, dialog, Menu)
-    └── requires: child_process (spawn)
-    └── spawns: backend/ArasBackend/bin/Debug/net8.0/win-x64/ArasBackend.exe
+    ├── requires: main/logger.js (ANSI logging utils)
+    ├── requires: main/security.js (resolveSafePath containment checks)
+    ├── requires: main/backendRunner.js (spawns & manages ArasBackend.exe)
+    ├── requires: main/ipcHandlers.js (registers fs, dialog, settings IPCs)
     └── loads: http://localhost:5173 (dev) OR dist/index.html (prod)
 ```
 
-**Source**: [main.js](../main.js)
+**Source**: [main.js](../main.js), [main/](file:///c:/Projects/ARASTester/main)
 
 ### 1.3 Entry Point Chain (Backend)
 
@@ -168,16 +169,17 @@ Observable call chain from HTTP endpoint to ARAS IOM:
 HTTP Request
     ├── [Session Extraction via WebSessionContext]
     └── ItemController (injects ItemAppService)
-            └── ItemAppService (injects IArasGateway)
-                    └── ArasGateway (injects ArasSessionManager)
+            └── ItemAppService (injects IItemGateway, IWorkflowGateway, etc.)
+                    └── Domain Gateways (inject ArasSessionManager)
                             ├── uses: ISessionContext.SessionId (resolved from WebSessionContext)
-                            └── calls: Innovator.newItem(), item.apply(), etc.
+                            └── calls: Innovator.newItem(), item.apply(), etc. (via Aras.IOM SDK)
 ```
 
 **Observations**:
 
-- `ItemController` delegates entirely to `IItemAppService`.
-- `ArasGateway` no longer depends on `IHttpContextAccessor` directly; it relies on `ISessionContext` to be host-agnostic.
+- `ItemController` delegates entirely to `ItemAppService`.
+- `ItemAppService` acts as a thin aggregation service distributing calls to domain-specific gateways (`IItemGateway`, `IWorkflowGateway`, `IAssertionGateway`, `IFileGateway`, `IUtilityGateway`).
+- Gateways do not depend on `IHttpContextAccessor` directly; they rely on `ISessionContext` to be host-agnostic.
 - `ArasSessionManager` uses `ISessionContext` to look up the correct IOM connection from its cache.
 
 ---
@@ -200,11 +202,11 @@ HTTP Request
 
 ## 5. Communication Protocol
 
-| From                | To           | Protocol      | Evidence                                       |
-| ------------------- | ------------ | ------------- | ---------------------------------------------- |
-| Frontend (Renderer) | Backend      | HTTP REST     | API endpoints in FACT_PUBLIC_INTERFACES.md     |
-| Frontend (Renderer) | Main Process | Electron IPC  | IPC handlers in main.js (FACT_ENTRY_POINTS.md) |
-| Main Process        | Backend      | Process spawn | spawn() call in main.js Line 68                |
+| From                | To           | Protocol      | Evidence                                                      |
+| ------------------- | ------------ | ------------- | ------------------------------------------------------------- |
+| Frontend (Renderer) | Backend      | HTTP REST     | API endpoints in FACT_PUBLIC_INTERFACES.md                    |
+| Frontend (Renderer) | Main Process | Electron IPC  | IPC handlers in main/ipcHandlers.js (FACT_ENTRY_POINTS.md)    |
+| Main Process        | Backend      | Process spawn | spawn() call in main/backendRunner.js (getBackendPath)        |
 
 ---
 
